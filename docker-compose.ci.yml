@@ -2,9 +2,11 @@ services:
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
+
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: secrets.DB_PASSWORD
+      MSSQL_SA_PASSWORD: "${DB_PASSWORD}"
+
     ports:
       - "1433:1433"
 
@@ -18,9 +20,9 @@ services:
 
     environment:
       DB_HOST: sqlserver
-      DB_PORT: 1433
+      DB_PORT: "1433"
       DB_USER: sa
-      DB_PASSWORD: secrets.DB_PASSWORD
+      DB_PASSWORD: "${DB_PASSWORD}"
 
     ports:
       - "3000:3000"
@@ -32,6 +34,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
       args:
         VITE_API_URL: ${VITE_API_URL:?VITE_API_URL is required}
 

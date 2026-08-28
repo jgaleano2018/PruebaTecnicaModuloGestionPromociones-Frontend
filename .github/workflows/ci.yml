@@ -12,6 +12,9 @@ permissions:
 
 jobs:
 
+  # ============================================================
+  # 1. LINT
+  # ============================================================
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -33,6 +36,9 @@ jobs:
         run: npm run lint
 
 
+  # ============================================================
+  # 2. TEST
+  # ============================================================
   test:
     name: Unit tests
     needs: lint
@@ -58,6 +64,9 @@ jobs:
         run: npm run test:coverage
 
 
+  # ============================================================
+  # 3. BUILD
+  # ============================================================
   build:
     name: Build Docker images
     needs: test
@@ -65,6 +74,7 @@ jobs:
 
     env:
       VITE_API_URL: http://localhost:3000
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
 
     steps:
       - name: Checkout frontend
@@ -83,6 +93,11 @@ jobs:
 
           if [[ -z "${VITE_API_URL:-}" ]]; then
             echo "Missing required CI variable: VITE_API_URL" >&2
+            exit 1
+          fi
+
+          if [[ -z "${DB_PASSWORD:-}" ]]; then
+            echo "Missing required CI secret: DB_PASSWORD" >&2
             exit 1
           fi
 
@@ -106,6 +121,9 @@ jobs:
             build
 
 
+  # ============================================================
+  # 4. SMOKE TEST
+  # ============================================================
   smoke-test:
     name: Integration smoke test
     needs: build
@@ -114,6 +132,7 @@ jobs:
     env:
       VITE_API_URL: http://localhost:3000
       SMOKE_URL: http://localhost:3000
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
 
     steps:
       - name: Checkout frontend
@@ -130,11 +149,11 @@ jobs:
         run: |
           set -Eeuo pipefail
 
-          required=(VITE_API_URL SMOKE_URL)
+          required=(VITE_API_URL SMOKE_URL DB_PASSWORD)
 
           for name in "${required[@]}"; do
             if [[ -z "${!name:-}" ]]; then
-              echo "Missing required CI variable: ${name}" >&2
+              echo "Missing required CI configuration: ${name}" >&2
               exit 1
             fi
           done
@@ -156,12 +175,21 @@ jobs:
             -f docker-compose.ci.yml \
             up -d --build
 
+      - name: Show container status
+        if: always()
+        run: |
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.ci.yml \
+            ps
+
       - name: Wait for backend health endpoint
         shell: bash
         run: |
           set -Eeuo pipefail
 
           for attempt in {1..30}; do
+
             status=$(curl -sS \
               -o /tmp/health-response \
               -w '%{http_code}' \
@@ -169,6 +197,7 @@ jobs:
 
             if [[ "$status" == "200" ]]; then
               echo "Health check passed"
+              cat /tmp/health-response
               exit 0
             fi
 
@@ -179,6 +208,13 @@ jobs:
 
           echo "Smoke test failed: $SMOKE_URL/health did not return HTTP 200" >&2
 
+          echo "========== DOCKER PS =========="
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.ci.yml \
+            ps
+
+          echo "========== DOCKER LOGS =========="
           docker compose \
             -f docker-compose.yml \
             -f docker-compose.ci.yml \
