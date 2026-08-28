@@ -32,6 +32,7 @@ steps:
   - name: Run lint
     run: npm run lint
 
+
 test:
 name: Unit tests
 needs: lint
@@ -60,6 +61,7 @@ build:
 name: Build Docker images
 needs: test
 runs-on: ubuntu-latest
+
 
 env:
   VITE_API_URL: http://localhost:3000
@@ -102,6 +104,7 @@ steps:
         -f docker-compose.yml \
         -f docker-compose.ci.yml \
         build
+
 
 smoke-test:
 name: Integration smoke test
@@ -210,4 +213,3 @@ steps:
         -f docker-compose.yml \
         -f docker-compose.ci.yml \
         down -v --remove-orphans
-
