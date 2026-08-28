@@ -1,281 +1,293 @@
 name: CI
 
 on:
-  push:
-    branches: [main, master]
+push:
+branches: [main, master]
 
-  pull_request:
-    branches: [main, master]
+pull_request:
+branches: [main, master]
 
 permissions:
-  contents: read
+contents: read
 
 jobs:
 
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
+lint:
+name: Lint
+runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout frontend
-        uses: actions/checkout@v4
+steps:
+  - name: Checkout frontend
+    uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
+  - name: Setup Node.js
+    uses: actions/setup-node@v4
+    with:
+      node-version: 22
+      cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+  - name: Install dependencies
+    run: npm ci
 
-      - name: Run lint
-        run: npm run lint
+  - name: Run lint
+    run: npm run lint
+
+test:
+name: Unit tests
+needs: lint
+runs-on: ubuntu-latest
+
+steps:
+  - name: Checkout frontend
+    uses: actions/checkout@v4
+
+  - name: Setup Node.js
+    uses: actions/setup-node@v4
+    with:
+      node-version: 22
+      cache: npm
+
+  - name: Install dependencies
+    run: npm ci
+
+  - name: Run tests
+    run: npm test
+
+  - name: Run coverage
+    run: npm run test:coverage
+
+build:
+name: Build Docker images
+needs: test
+runs-on: ubuntu-latest
+
+env:
+  VITE_API_URL: http://localhost:3000
+  DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
+steps:
+
+  - name: Checkout frontend
+    uses: actions/checkout@v4
+
+  - name: Checkout backend
+    uses: actions/checkout@v4
+    with:
+      repository: jgaleano2018/PruebaTecnicaModuloGestionPromociones-Backend
+      path: backend
+
+  - name: Validate CI configuration
+    shell: bash
+    run: |
+      set -Eeuo pipefail
+
+      echo "Validating CI configuration..."
+
+      if [[ -z "${VITE_API_URL:-}" ]]; then
+        echo "Missing required CI variable: VITE_API_URL" >&2
+        exit 1
+      fi
+
+      if [[ -z "${DB_PASSWORD:-}" ]]; then
+        echo "DB_PASSWORD secret is missing" >&2
+        exit 1
+      fi
+
+      if [[ ! -d "backend" ]]; then
+        echo "Backend directory does not exist" >&2
+        exit 1
+      fi
+
+      if [[ ! -f "backend/Dockerfile" ]]; then
+        echo "Backend Dockerfile does not exist" >&2
+        exit 1
+      fi
+
+      if [[ ! -f "docker-compose.yml" ]]; then
+        echo "docker-compose.yml does not exist" >&2
+        exit 1
+      fi
+
+      if [[ ! -f "docker-compose.ci.yml" ]]; then
+        echo "docker-compose.ci.yml does not exist" >&2
+        exit 1
+      fi
+
+      echo "Frontend, backend and Docker Compose files found successfully."
+
+  - name: Validate Docker Compose configuration
+    run: |
+      docker compose \
+        -f docker-compose.yml \
+        -f docker-compose.ci.yml \
+        config
+
+  - name: Build backend and frontend images
+    run: |
+      docker compose \
+        -f docker-compose.yml \
+        -f docker-compose.ci.yml \
+        build
+
+smoke-test:
+name: Integration smoke test
+needs: build
+runs-on: ubuntu-latest
+
+env:
+  VITE_API_URL: http://localhost:3000
+  SMOKE_URL: http://localhost:3000/api/v1
+  DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
+steps:
+
+  - name: Checkout frontend
+    uses: actions/checkout@v4
+
+  - name: Checkout backend
+    uses: actions/checkout@v4
+    with:
+      repository: jgaleano2018/PruebaTecnicaModuloGestionPromociones-Backend
+      path: backend
+
+  - name: Validate smoke-test configuration
+    shell: bash
+    run: |
+      set -Eeuo pipefail
+
+      echo "Validating smoke-test configuration..."
+
+      if [[ -z "${DB_PASSWORD:-}" ]]; then
+        echo "DB_PASSWORD secret is missing" >&2
+        exit 1
+      fi
+
+      if [[ ! -d "backend" ]]; then
+        echo "Backend directory does not exist" >&2
+        exit 1
+      fi
+
+      if [[ ! -f "backend/Dockerfile" ]]; then
+        echo "Backend Dockerfile does not exist" >&2
+        exit 1
+      fi
+
+      if [[ ! -f "docker-compose.yml" ]]; then
+        echo "docker-compose.yml does not exist" >&2
+        exit 1
+      fi
+
+      if [[ ! -f "docker-compose.ci.yml" ]]; then
+        echo "docker-compose.ci.yml does not exist" >&2
+        exit 1
+      fi
+
+      echo "Smoke-test configuration is valid."
+
+  - name: Validate Docker Compose configuration
+    run: |
+      docker compose \
+        -f docker-compose.yml \
+        -f docker-compose.ci.yml \
+        config
+
+  - name: Clean previous containers
+    run: |
+      docker compose \
+        -f docker-compose.yml \
+        -f docker-compose.ci.yml \
+        down -v --remove-orphans
+
+  - name: Start application
+    run: |
+      docker compose \
+        -f docker-compose.yml \
+        -f docker-compose.ci.yml \
+        up -d --build
+
+  - name: Show container status
+    run: |
+      docker compose \
+        -f docker-compose.yml \
+        -f docker-compose.ci.yml \
+        ps
 
 
-  test:
-    name: Unit tests
-    needs: lint
-    runs-on: ubuntu-latest
+  - name: Wait for SQL Server
+    shell: bash
+    run: |
+      set -Eeuo pipefail
 
-    steps:
-      - name: Checkout frontend
-        uses: actions/checkout@v4
+      for attempt in {1..60}; do
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
+        status=$(docker inspect \
+          --format='{{.State.Health.Status}}' \
+          sqlserver 2>/dev/null || true)
 
-      - name: Install dependencies
-        run: npm ci
+        if [[ "$status" == "healthy" ]]; then
+          echo "SQL Server is healthy."
+          exit 0
+        fi
 
-      - name: Run tests
-        run: npm test
+        echo "Waiting for SQL Server (attempt $attempt/60, status: ${status:-not-ready})"
 
-      - name: Run coverage
-        run: npm run test:coverage
+        sleep 2
+      done
 
+      echo "SQL Server did not become healthy." >&2
 
-  build:
-    name: Build Docker images
-    needs: test
-    runs-on: ubuntu-latest
+      docker compose \
+        -f docker-compose.yml \
+        -f docker-compose.ci.yml \
+        logs sqlserver
 
-    env:
-      VITE_API_URL: http://localhost:3000
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-
-    steps:
-      - name: Checkout frontend
-        uses: actions/checkout@v4
-
-      - name: Checkout backend
-        uses: actions/checkout@v4
-        with:
-          repository: jgaleano2018/PruebaTecnicaModuloGestionPromociones-Backend
-          path: backend
-
-      - name: Validate CI configuration
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-
-          if [[ -z "${VITE_API_URL:-}" ]]; then
-            echo "Missing required CI variable: VITE_API_URL" >&2
-            exit 1
-          fi
-
-          if [[ -z "${DB_PASSWORD:-}" ]]; then
-            echo "DB_PASSWORD secret is missing" >&2
-            exit 1
-          fi
-
-          if [[ ! -d "backend" ]]; then
-            echo "Backend directory does not exist" >&2
-            exit 1
-          fi
-
-          if [[ ! -f "backend/Dockerfile" ]]; then
-            echo "Backend Dockerfile does not exist" >&2
-            exit 1
-          fi
-
-          if [[ ! -f "docker-compose.yml" ]]; then
-            echo "docker-compose.yml does not exist" >&2
-            exit 1
-          fi
-
-          if [[ ! -f "docker-compose.ci.yml" ]]; then
-            echo "docker-compose.ci.yml does not exist" >&2
-            exit 1
-          fi
-
-          echo "Frontend, backend y Docker Compose encontrados correctamente."
-
-      - name: Validate Docker Compose configuration
-        run: |
-          docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.ci.yml \
-            config
-
-      - name: Build backend and frontend images
-        run: |
-          docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.ci.yml \
-            build
+      exit 1
 
 
-  smoke-test:
-    name: Integration smoke test
-    needs: build
-    runs-on: ubuntu-latest
+  - name: Wait for backend health endpoint
+    shell: bash
+    run: |
+      set -Eeuo pipefail
 
-    env:
-      VITE_API_URL: http://localhost:3000
-      SMOKE_URL: http://localhost:3000
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      for attempt in {1..60}; do
 
-    steps:
-      - name: Checkout frontend
-        uses: actions/checkout@v4
+        status=$(curl -sS \
+          -o /tmp/health-response \
+          -w '%{http_code}' \
+          "$SMOKE_URL/health" || true)
 
-      - name: Checkout backend
-        uses: actions/checkout@v4
-        with:
-          repository: jgaleano2018/PruebaTecnicaModuloGestionPromociones-Backend
-          path: backend
+        if [[ "$status" == "200" ]]; then
+          echo "Backend health check passed."
+          cat /tmp/health-response
+          exit 0
+        fi
 
-      - name: Validate smoke-test configuration
-        shell: bash
-        run: |
-          set -Eeuo pipefail
+        echo "Waiting for $SMOKE_URL/health (attempt $attempt/60, status: ${status:-connection-failed})"
 
-          if [[ -z "${DB_PASSWORD:-}" ]]; then
-            echo "DB_PASSWORD secret is missing" >&2
-            exit 1
-          fi
+        sleep 2
+      done
 
-          if [[ ! -d "backend" ]]; then
-            echo "Backend directory does not exist" >&2
-            exit 1
-          fi
+      echo "Smoke test failed: $SMOKE_URL/health did not return HTTP 200." >&2
 
-          if [[ ! -f "backend/Dockerfile" ]]; then
-            echo "Backend Dockerfile does not exist" >&2
-            exit 1
-          fi
+      echo "Container status:"
+      docker compose \
+        -f docker-compose.yml \
+        -f docker-compose.ci.yml \
+        ps
 
-          if [[ ! -f "docker-compose.yml" ]]; then
-            echo "docker-compose.yml does not exist" >&2
-            exit 1
-          fi
+      echo "Application logs:"
+      docker compose \
+        -f docker-compose.yml \
+        -f docker-compose.ci.yml \
+        logs
 
-          if [[ ! -f "docker-compose.ci.yml" ]]; then
-            echo "docker-compose.ci.yml does not exist" >&2
-            exit 1
-          fi
+      exit 1
 
-          echo "Smoke-test configuration is valid."
 
-      - name: Validate Docker Compose configuration
-        run: |
-          docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.ci.yml \
-            config
-
-      - name: Clean previous containers
-        run: |
-          docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.ci.yml \
-            down -v --remove-orphans
-
-      - name: Start application
-        run: |
-          docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.ci.yml \
-            up -d --build
-
-      - name: Show container status
-        run: |
-          docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.ci.yml \
-            ps
-
-      - name: Wait for SQL Server
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-
-          for attempt in {1..60}; do
-            status=$(docker inspect \
-              --format='{{.State.Health.Status}}' \
-              sqlserver 2>/dev/null || true)
-
-            if [[ "$status" == "healthy" ]]; then
-              echo "SQL Server is healthy."
-              exit 0
-            fi
-
-            echo "Waiting for SQL Server (attempt $attempt/60, status: ${status:-not-ready})"
-            sleep 2
-          done
-
-          echo "SQL Server did not become healthy." >&2
-
-          docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.ci.yml \
-            logs sqlserver
-
-          exit 1
-
-      - name: Wait for backend health endpoint
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-
-          for attempt in {1..60}; do
-            status=$(curl -sS \
-              -o /tmp/health-response \
-              -w '%{http_code}' \
-              "$SMOKE_URL/health" || true)
-
-            if [[ "$status" == "200" ]]; then
-              echo "Health check passed."
-              cat /tmp/health-response
-              exit 0
-            fi
-
-            echo "Waiting for /health (attempt $attempt/60, status: ${status:-connection-failed})"
-            sleep 2
-          done
-
-          echo "Smoke test failed: $SMOKE_URL/health did not return HTTP 200." >&2
-
-          docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.ci.yml \
-            ps
-
-          docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.ci.yml \
-            logs
-
-          exit 1
-
-      - name: Stop application
-        if: always()
-        run: |
-          docker compose \
-            -f docker-compose.yml \
-            -f docker-compose.ci.yml \
-            down -v --remove-orphans
+  - name: Stop application
+    if: always()
+    run: |
+      docker compose \
+        -f docker-compose.yml \
+        -f docker-compose.ci.yml \
+        down -v --remove-orphans

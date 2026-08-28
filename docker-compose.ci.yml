@@ -1,15 +1,13 @@
 services:
 
-  sqlserver:
-    environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_PID: "Developer"
-
   backend:
-    environment:
-      NODE_ENV: production
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
 
   frontend:
     build:
+      context: .
+      dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+        VITE_API_URL: "${VITE_API_URL:-http://localhost:3000}"
