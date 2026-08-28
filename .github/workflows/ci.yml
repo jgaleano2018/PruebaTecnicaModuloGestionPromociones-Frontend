@@ -17,15 +17,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout frontend
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      - run: npm ci
-      - run: npm run lint
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint
 
 
   test:
@@ -34,16 +39,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout frontend
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      - run: npm ci
-      - run: npm test
-      - run: npm run test:coverage
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run coverage
+        run: npm run test:coverage
 
 
   build:
@@ -55,9 +67,16 @@ jobs:
       VITE_API_URL: http://localhost:3000
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout frontend
+        uses: actions/checkout@v4
 
-      - name: Validate required CI configuration
+      - name: Checkout backend
+        uses: actions/checkout@v4
+        with:
+          repository: jgaleano2018/PruebaTecnicaModuloGestionPromociones-Backend
+          path: backend
+
+      - name: Validate CI configuration
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -66,6 +85,18 @@ jobs:
             echo "Missing required CI variable: VITE_API_URL" >&2
             exit 1
           fi
+
+          if [[ ! -d "backend" ]]; then
+            echo "Backend directory does not exist" >&2
+            exit 1
+          fi
+
+          if [[ ! -f "backend/Dockerfile" ]]; then
+            echo "Backend Dockerfile does not exist" >&2
+            exit 1
+          fi
+
+          echo "Frontend y backend encontrados correctamente."
 
       - name: Build backend and frontend images
         run: |
@@ -81,13 +112,20 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      VITE_API_URL: ${{ vars.VITE_API_URL }}
-      SMOKE_URL: ${{ vars.SMOKE_URL }}
+      VITE_API_URL: http://localhost:3000
+      SMOKE_URL: http://localhost:3000
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout frontend
+        uses: actions/checkout@v4
 
-      - name: Validate required smoke-test configuration
+      - name: Checkout backend
+        uses: actions/checkout@v4
+        with:
+          repository: jgaleano2018/PruebaTecnicaModuloGestionPromociones-Backend
+          path: backend
+
+      - name: Validate smoke-test configuration
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -100,6 +138,16 @@ jobs:
               exit 1
             fi
           done
+
+          if [[ ! -d "backend" ]]; then
+            echo "Backend directory does not exist" >&2
+            exit 1
+          fi
+
+          if [[ ! -f "backend/Dockerfile" ]]; then
+            echo "Backend Dockerfile does not exist" >&2
+            exit 1
+          fi
 
       - name: Start application
         run: |
