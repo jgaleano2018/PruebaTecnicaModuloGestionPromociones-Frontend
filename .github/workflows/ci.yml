@@ -3,6 +3,7 @@ name: CI
 on:
 push:
 branches: [main, master]
+
 pull_request:
 branches: [main, master]
 
@@ -32,12 +33,13 @@ steps:
   - name: Run lint
     run: npm run lint
 
+
 test:
 name: Unit tests
 needs: lint
 runs-on: ubuntu-latest
 
-
+```
 steps:
   - name: Checkout frontend
     uses: actions/checkout@v4
@@ -128,6 +130,7 @@ steps:
         -f docker-compose.yml \
         -f docker-compose.ci.yml \
         build
+
 
 smoke-test:
 name: Integration smoke test
