@@ -1,9 +1,55 @@
 services:
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${DB_PASSWORD}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\""
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+
+      DB_HOST: sqlserver
+      DB_PORT: 1433
+      DB_USER: sa
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_NAME: DBGestionPromociones
+
+      DB_USE_WINDOWS_AUTH: "false"
+      DB_ENCRYPT: "true"
+      DB_TRUST_SERVER_CERTIFICATE: "true"
+      DB_SYNCHRONIZE: "false"
+      DB_LOGGING: "true"
+
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
   frontend:
     build:
       context: .
+      dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
     ports:
-      - "8080:80"
-    restart: unless-stopped
+      - "3000:3000"
+    depends_on:
+      - backend

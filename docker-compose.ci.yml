@@ -3,7 +3,6 @@ services:
   sqlserver:
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "Promociones#Nueva2026!"
       MSSQL_PID: "Developer"
 
   backend:
@@ -13,7 +12,6 @@ services:
       DB_HOST: sqlserver
       DB_PORT: 1433
       DB_USER: sa
-      DB_PASSWORD: "Promociones#Nueva2026!"
       DB_NAME: DBGestionPromociones
 
       DB_USE_WINDOWS_AUTH: "false"
