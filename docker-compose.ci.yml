@@ -1,42 +1,75 @@
 services:
 
+sqlserver:
+image: mcr.microsoft.com/mssql/server:2022-latest
+
+```
+environment:
+  ACCEPT_EULA: "Y"
+  MSSQL_SA_PASSWORD: "${DB_PASSWORD}"
+  MSSQL_PID: "Developer"
+
+ports:
+  - "1433:1433"
+
+healthcheck:
+  test:
+    [
+      "CMD-SHELL",
+              "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '${DB_PASSWORD}' -C -Q 'SELECT 1' || exit 1"
+    ]
+  interval: 10s
+  timeout: 5s
+  retries: 20
+  start_period: 30s
+```
+
+backend:
+build:
+context: ./backend
+dockerfile: Dockerfile
+
+```
+environment:
+  PORT: "3000"
+  NODE_ENV: "test"
+  API_PREFIX: "/api/v1"
+
+  DB_HOST: "sqlserver"
+  DB_PORT: "1433"
+  DB_USER: "sa"
+  DB_PASSWORD: "${DB_PASSWORD}"
+  DB_NAME: "DBGestionPromociones"
+
+  DB_USE_WINDOWS_AUTH: "false"
+  DB_SYNCHRONIZE: "false"
+  DB_LOGGING: "true"
+  DB_ENCRYPT: "false"
+  DB_TRUST_SERVER_CERTIFICATE: "true"
+
+  CORS_ORIGINS: "http://localhost:8080,http://localhost:3000"
+
+depends_on:
   sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    condition: service_healthy
 
-    environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "${DB_PASSWORD}"
+ports:
+  - "3000:3000"
+```
 
-    ports:
-      - "1433:1433"
+frontend:
+build:
+context: .
+dockerfile: Dockerfile
 
+```
+  args:
+    VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+
+depends_on:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    condition: service_started
 
-    depends_on:
-      - sqlserver
-
-    environment:
-      DB_HOST: sqlserver
-      DB_PORT: "1433"
-      DB_USER: sa
-      DB_PASSWORD: "${DB_PASSWORD}"
-
-    ports:
-      - "3000:3000"
-
-  frontend:
-    depends_on:
-      - backend
-
-    build:
-      context: .
-      dockerfile: Dockerfile
-
-      args:
-        VITE_API_URL: ${VITE_API_URL:?VITE_API_URL is required}
-
-    ports:
-      - "8080:80"
+ports:
+  - "8080:80"
+```
