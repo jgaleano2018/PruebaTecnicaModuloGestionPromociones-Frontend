@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  test:
+    name: Unit tests
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:coverage
+
+  build:
+    name: Build Docker images
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      BACKEND_CONTEXT: ${{ vars.BACKEND_CONTEXT }}
+      BACKEND_DOCKERFILE: ${{ vars.BACKEND_DOCKERFILE }}
+      BACKEND_DATABASE_URL: ${{ secrets.BACKEND_DATABASE_URL }}
+      VITE_API_URL: ${{ vars.VITE_API_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate required CI configuration
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          required=(BACKEND_CONTEXT BACKEND_DOCKERFILE BACKEND_DATABASE_URL VITE_API_URL)
+          for name in "${required[@]}"; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Missing required CI variable: ${name}" >&2
+              exit 1
+            fi
+          done
+          [[ -d "$BACKEND_CONTEXT" ]] || { echo "Backend context does not exist: $BACKEND_CONTEXT" >&2; exit 1; }
+          [[ -f "$BACKEND_CONTEXT/$BACKEND_DOCKERFILE" ]] || { echo "Backend Dockerfile does not exist" >&2; exit 1; }
+      - name: Build backend and frontend images
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml build
+
+  smoke-test:
+    name: Integration smoke test
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      BACKEND_CONTEXT: ${{ vars.BACKEND_CONTEXT }}
+      BACKEND_DOCKERFILE: ${{ vars.BACKEND_DOCKERFILE }}
+      BACKEND_DATABASE_URL: ${{ secrets.BACKEND_DATABASE_URL }}
+      VITE_API_URL: ${{ vars.VITE_API_URL }}
+      SMOKE_URL: ${{ vars.SMOKE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate required smoke-test configuration
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          required=(BACKEND_CONTEXT BACKEND_DOCKERFILE BACKEND_DATABASE_URL VITE_API_URL SMOKE_URL)
+          for name in "${required[@]}"; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Missing required CI variable: ${name}" >&2
+              exit 1
+            fi
+          done
+      - name: Start application
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build
+      - name: Wait for backend health endpoint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for attempt in {1..30}; do
+            status=$(curl -sS -o /tmp/health-response -w '%{http_code}' "$SMOKE_URL/health" || true)
+            if [[ "$status" == "200" ]]; then
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Waiting for /health (attempt $attempt/30, status: ${status:-connection-failed})"
+            sleep 2
+          done
+          echo "Smoke test failed: $SMOKE_URL/health did not return HTTP 200" >&2
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml logs
+          exit 1
+      - name: Stop application
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down -v

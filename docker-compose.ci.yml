@@ -1,0 +1,19 @@
+services:
+  backend:
+    build:
+      context: ${BACKEND_CONTEXT:?BACKEND_CONTEXT is required}
+      dockerfile: ${BACKEND_DOCKERFILE:?BACKEND_DOCKERFILE is required}
+    environment:
+      DATABASE_URL: ${BACKEND_DATABASE_URL:?BACKEND_DATABASE_URL is required}
+    ports:
+      - "3000:3000"
+
+  frontend:
+    depends_on:
+      - backend
+    build:
+      context: .
+      args:
+        VITE_API_URL: ${VITE_API_URL:?VITE_API_URL is required}
+    ports:
+      - "8080:80"

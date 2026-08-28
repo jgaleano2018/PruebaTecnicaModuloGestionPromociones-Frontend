@@ -1,0 +1,32 @@
+{
+  "name": "gestion-promociones-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "lint": "eslint .",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "lucide-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "rxjs": "latest",
+    "vite": "latest",
+    "vitest": "latest"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/react": "latest",
+    "@testing-library/user-event": "latest",
+    "@vitest/coverage-v8": "latest",
+    "eslint": "^10.9.1",
+    "globals": "^17.11.0",
+    "jsdom": "^30.0.1"
+  }
+}

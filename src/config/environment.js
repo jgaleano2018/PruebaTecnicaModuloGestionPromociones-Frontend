@@ -1,0 +1,5 @@
+const configuredApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
+export const environment = Object.freeze({
+  apiUrl: configuredApiUrl.replace(/\/$/, ''),
+})

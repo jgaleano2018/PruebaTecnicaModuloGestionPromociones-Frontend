@@ -1,0 +1,8 @@
+export { categoriaService } from './categoriaService'
+export { estadoPromocionService } from './estadoPromocionService'
+export { productoService } from './productoService'
+export { promocionCategoriaService } from './promocionCategoriaService'
+export { promocionProductoService } from './promocionProductoService'
+export { promocionReglaService } from './promocionReglaService'
+export { promocionService } from './promocionService'
+export { tipoDescuentoService } from './tipoDescuentoService'
