@@ -41,9 +41,9 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     env:
-      BACKEND_CONTEXT: ${{ vars.BACKEND_CONTEXT }}
-      BACKEND_DOCKERFILE: ${{ vars.BACKEND_DOCKERFILE }}
-      VITE_API_URL: ${{ vars.VITE_API_URL }}
+      BACKEND_CONTEXT: ${{ secrets.BACKEND_CONTEXT }}
+      BACKEND_DOCKERFILE: ${{ secrets.BACKEND_DOCKERFILE }}
+      VITE_API_URL: ${{ secrets.VITE_API_URL }}
     steps:
       - uses: actions/checkout@v4
       - name: Validate required CI configuration
@@ -67,10 +67,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     env:
-      BACKEND_CONTEXT: ${{ vars.BACKEND_CONTEXT }}
-      BACKEND_DOCKERFILE: ${{ vars.BACKEND_DOCKERFILE }}
-      VITE_API_URL: ${{ vars.VITE_API_URL }}
-      SMOKE_URL: ${{ vars.SMOKE_URL }}
+      BACKEND_CONTEXT: ${{ secrets.BACKEND_CONTEXT }}
+      BACKEND_DOCKERFILE: ${{ secrets.BACKEND_DOCKERFILE }}
+      VITE_API_URL: ${{ secrets.VITE_API_URL }}
+      SMOKE_URL: ${{ secrets.SMOKE_URL }}
     steps:
       - uses: actions/checkout@v4
       - name: Validate required smoke-test configuration
