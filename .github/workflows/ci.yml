@@ -2,15 +2,20 @@ name: CI
 
 on:
 push:
-branches: [main, master]
+branches:
+- main
+- master
 
 pull_request:
-branches: [main, master]
+branches:
+- main
+- master
 
 permissions:
 contents: read
 
 jobs:
+
 
 lint:
 name: Lint
@@ -66,7 +71,6 @@ env:
   DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
 
 steps:
-
   - name: Checkout frontend
     uses: actions/checkout@v4
 
@@ -140,7 +144,6 @@ env:
   DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
 
 steps:
-
   - name: Checkout frontend
     uses: actions/checkout@v4
 
@@ -212,7 +215,6 @@ steps:
         -f docker-compose.ci.yml \
         ps
 
-
   - name: Wait for SQL Server
     shell: bash
     run: |
@@ -242,7 +244,6 @@ steps:
         logs sqlserver
 
       exit 1
-
 
   - name: Wait for backend health endpoint
     shell: bash
@@ -282,7 +283,6 @@ steps:
         logs
 
       exit 1
-
 
   - name: Stop application
     if: always()
