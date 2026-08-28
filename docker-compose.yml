@@ -19,26 +19,27 @@ services:
           "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q \"SELECT 1\""
         ]
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 20
       start_period: 30s
 
   backend:
     build:
-      context: ./backend
+      context: ../PruebaTecnicaModuloGestionPromociones-Backend
       dockerfile: Dockerfile
 
     environment:
       NODE_ENV: production
+      PORT: "3000"
 
       DB_HOST: sqlserver
-      DB_PORT: 1433
+      DB_PORT: "1433"
       DB_USER: sa
       DB_PASSWORD: "${DB_PASSWORD}"
-      DB_NAME: DBGestionPromociones
+      DB_NAME: "PromocionesDB"
 
       DB_USE_WINDOWS_AUTH: "false"
-      DB_ENCRYPT: "true"
+      DB_ENCRYPT: "false"
       DB_TRUST_SERVER_CERTIFICATE: "true"
       DB_SYNCHRONIZE: "false"
       DB_LOGGING: "true"
@@ -55,10 +56,11 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+        VITE_API_URL: "${VITE_API_URL:-http://localhost:3000}"
 
     ports:
       - "3001:80"
 
     depends_on:
-      - backend
+      backend:
+        condition: service_started
