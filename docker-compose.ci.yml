@@ -9,17 +9,6 @@ services:
     environment:
       NODE_ENV: production
 
-      DB_HOST: sqlserver
-      DB_PORT: 1433
-      DB_USER: sa
-      DB_NAME: DBGestionPromociones
-
-      DB_USE_WINDOWS_AUTH: "false"
-      DB_ENCRYPT: "true"
-      DB_TRUST_SERVER_CERTIFICATE: "true"
-      DB_SYNCHRONIZE: "false"
-      DB_LOGGING: "true"
-
   frontend:
     build:
       args:

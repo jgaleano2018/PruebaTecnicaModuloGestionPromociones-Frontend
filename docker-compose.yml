@@ -3,12 +3,15 @@ services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserver
+
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: "${DB_PASSWORD}"
       MSSQL_PID: "Developer"
+
     ports:
       - "1433:1433"
+
     healthcheck:
       test:
         [
@@ -24,6 +27,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+
     environment:
       NODE_ENV: production
 
@@ -39,6 +43,9 @@ services:
       DB_SYNCHRONIZE: "false"
       DB_LOGGING: "true"
 
+    ports:
+      - "3000:3000"
+
     depends_on:
       sqlserver:
         condition: service_healthy
@@ -49,7 +56,9 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+
     ports:
-      - "3000:3000"
+      - "3001:80"
+
     depends_on:
       - backend
