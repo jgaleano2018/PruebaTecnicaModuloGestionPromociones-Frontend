@@ -44,8 +44,6 @@ Antes de construir, el pipeline valida que existan estas GitHub Variables:
 
 También requiere este GitHub Secret:
 
-- `BACKEND_DATABASE_URL`: credencial de conexión que se inyecta al contenedor backend.
-
 El pipeline falla explícitamente si alguna variable falta, si el contexto o Dockerfile del backend no existe, o si `$SMOKE_URL/health` no responde `HTTP 200`.
 
 Este repositorio contiene el frontend. Para ejecutar la etapa de integración se debe agregar el backend al checkout o ajustar `BACKEND_CONTEXT` para apuntar a un contexto de backend disponible en el repositorio.
