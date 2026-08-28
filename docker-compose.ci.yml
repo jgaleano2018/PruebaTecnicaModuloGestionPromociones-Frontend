@@ -10,7 +10,7 @@ services:
     depends_on:
       - backend
     build:
-      context: ./frontend
+      context: .
       dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:?VITE_API_URL is required}
