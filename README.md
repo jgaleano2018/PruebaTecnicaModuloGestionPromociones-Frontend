@@ -37,13 +37,9 @@ El workflow `.github/workflows/ci.yml` ejecuta etapas dependientes:
 
 Antes de construir, el pipeline valida que existan estas GitHub Variables:
 
-- `BACKEND_CONTEXT`: ruta del contexto del backend dentro del checkout.
-- `BACKEND_DOCKERFILE`: nombre o ruta del Dockerfile del backend.
 - `VITE_API_URL`: URL que usará el frontend para comunicarse con el backend.
 - `SMOKE_URL`: URL base del backend para verificar `/health`.
 
 También requiere este GitHub Secret:
 
 El pipeline falla explícitamente si alguna variable falta, si el contexto o Dockerfile del backend no existe, o si `$SMOKE_URL/health` no responde `HTTP 200`.
-
-Este repositorio contiene el frontend. Para ejecutar la etapa de integración se debe agregar el backend al checkout o ajustar `BACKEND_CONTEXT` para apuntar a un contexto de backend disponible en el repositorio.

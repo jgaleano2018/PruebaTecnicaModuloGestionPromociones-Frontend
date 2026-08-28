@@ -1,8 +1,8 @@
 services:
   backend:
     build:
-      context: ${BACKEND_CONTEXT:?BACKEND_CONTEXT is required}
-      dockerfile: ${BACKEND_DOCKERFILE:?BACKEND_DOCKERFILE is required}
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
 
@@ -10,7 +10,8 @@ services:
     depends_on:
       - backend
     build:
-      context: .
+      context: ./frontend
+      dockerfile: Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:?VITE_API_URL is required}
     ports:
