@@ -1,26 +1,64 @@
-﻿backend:
-  build:
-    context: ../PruebaTecnicaModuloGestionPromociones-Backend
-    dockerfile: Dockerfile
+﻿services:
 
-  environment:
-    NODE_ENV: production
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
 
-    DB_HOST: sqlserver
-    DB_PORT: "1433"
-    DB_USER: sa
-    DB_PASSWORD: "${DB_PASSWORD}"
-    DB_NAME: PromocionesDB
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${DB_PASSWORD}"
+      MSSQL_PID: "Developer"
 
-    DB_USE_WINDOWS_AUTH: "false"
-    DB_ENCRYPT: "true"
-    DB_TRUST_SERVER_CERTIFICATE: "true"
-    DB_SYNCHRONIZE: "false"
-    DB_LOGGING: "true"
+    ports:
+      - "1433:1433"
 
-  ports:
-    - "3000:3000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S tcp:127.0.0.1,1433 -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -N o -l 3 -Q \"SELECT 1\" || exit 1"
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
 
-  depends_on:
-    sqlserver:
-      condition: service_healthy
+  backend:
+    build:
+      context: ../PruebaTecnicaModuloGestionPromociones-Backend
+      dockerfile: Dockerfile
+
+    environment:
+      NODE_ENV: production
+
+      DB_HOST: sqlserver
+      DB_PORT: "1433"
+      DB_USER: sa
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_NAME: PromocionesDB
+
+      DB_USE_WINDOWS_AUTH: "false"
+      DB_ENCRYPT: "true"
+      DB_TRUST_SERVER_CERTIFICATE: "true"
+      DB_SYNCHRONIZE: "false"
+      DB_LOGGING: "true"
+
+    ports:
+      - "3000:3000"
+
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: "${VITE_API_URL:-http://localhost:3000}"
+
+    ports:
+      - "3001:80"
+
+    depends_on:
+      - backend
