@@ -1,0 +1,526 @@
+/* ============================================================
+   PRODUCT-CATEGORY-GRID.CSS
+   Grid de selección de productos y categorías
+   ============================================================ */
+
+
+/* ============================================================
+   1. GRID GENERAL
+   ============================================================ */
+
+.selection-grid {
+  display: grid;
+
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(240px, 1fr)
+  );
+
+  gap: 16px;
+
+  margin-top: 18px;
+  padding: 4px;
+
+  max-height: 360px;
+
+  overflow-y: auto;
+}
+
+
+/* ============================================================
+   2. SCROLL DEL GRID
+   ============================================================ */
+
+.selection-grid::-webkit-scrollbar {
+  width: 7px;
+}
+
+.selection-grid::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.selection-grid::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.selection-grid::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+
+/* ============================================================
+   3. TARJETA GENERAL
+   Productos y categorías utilizan esta estructura
+   ============================================================ */
+
+.selection-card {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+
+  width: 100%;
+  min-height: 145px;
+
+  padding: 16px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+
+  background: #ffffff;
+
+  color: #0f172a;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    background-color 0.2s ease;
+}
+
+
+/* ============================================================
+   4. HOVER TARJETA
+   ============================================================ */
+
+.selection-card:hover {
+  border-color: #93c5fd;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 8px 20px rgba(15, 23, 42, 0.08);
+
+  transform: translateY(-2px);
+}
+
+
+/* ============================================================
+   5. TARJETA SELECCIONADA
+   ============================================================ */
+
+.selection-card.selected {
+  border-color: #2563eb;
+
+  background: #eff6ff;
+
+  box-shadow:
+    0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+
+/* ============================================================
+   6. PARTE SUPERIOR DE LA TARJETA
+   ============================================================ */
+
+.selection-card-top {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  min-width: 0;
+}
+
+.selection-card-top strong {
+  flex: 1;
+
+  min-width: 0;
+
+  color: #0f172a;
+
+  font-size: 15px;
+  font-weight: 700;
+
+  line-height: 1.3;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+
+/* ============================================================
+   7. ICONO DE PRODUCTO
+   ============================================================ */
+
+.selection-product-icon {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  width: 38px;
+  height: 38px;
+
+  border-radius: 10px;
+
+  background: #dbeafe;
+
+  color: #2563eb;
+}
+
+
+/* ============================================================
+   8. INFORMACIÓN DEL PRODUCTO
+   ============================================================ */
+
+.selection-card-info {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 6px;
+
+  color: #64748b;
+
+  font-size: 12px;
+}
+
+.selection-card-info span {
+  padding: 4px 7px;
+
+  border-radius: 6px;
+
+  background: #f8fafc;
+
+  white-space: nowrap;
+}
+
+
+/* ============================================================
+   9. DESCRIPCIÓN DE PRODUCTO / CATEGORÍA
+   ============================================================ */
+
+.selection-card small {
+  display: -webkit-box;
+
+  overflow: hidden;
+
+  color: #64748b;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+
+/* ============================================================
+   10. CHECK DE SELECCIÓN
+   ============================================================ */
+
+.selection-check {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  width: 24px;
+  height: 24px;
+
+  border-radius: 50%;
+
+  background: #2563eb;
+
+  color: #ffffff;
+}
+
+
+/* ============================================================
+   11. ESTADO VACÍO / CARGANDO
+   ============================================================ */
+
+.selection-empty {
+  grid-column: 1 / -1;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  min-height: 180px;
+
+  padding: 30px;
+
+  border: 1px dashed #cbd5e1;
+
+  border-radius: 14px;
+
+  background: #f8fafc;
+
+  color: #64748b;
+
+  text-align: center;
+}
+
+.selection-empty svg {
+  margin-bottom: 6px;
+}
+
+.selection-empty strong {
+  margin-top: 4px;
+
+  color: #334155;
+
+  font-size: 14px;
+}
+
+.selection-empty span {
+  margin-top: 5px;
+
+  color: #64748b;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+
+/* ============================================================
+   12. ERROR DE SELECCIÓN
+   ============================================================ */
+
+.selection-error {
+  margin-top: 10px;
+
+  padding: 10px 12px;
+
+  border: 1px solid #fecaca;
+
+  border-radius: 8px;
+
+  background: #fef2f2;
+
+  color: #b91c1c;
+
+  font-size: 13px;
+
+  font-weight: 600;
+}
+
+
+/* ============================================================
+   13. GRID DE CATEGORÍAS
+   ============================================================ */
+
+.category-grid {
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(200px, 1fr)
+  );
+
+  max-height: 300px;
+}
+
+
+/* ============================================================
+   14. TARJETA DE CATEGORÍA
+   ============================================================ */
+
+.category-card {
+  min-height: 120px;
+
+  justify-content: space-between;
+}
+
+
+/* ============================================================
+   15. HOVER DE CATEGORÍA
+   ============================================================ */
+
+.category-card:hover {
+  border-color: #c084fc;
+
+  background: #faf5ff;
+
+  box-shadow:
+    0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+
+/* ============================================================
+   16. CATEGORÍA SELECCIONADA
+   ============================================================ */
+
+.category-card.selected {
+  border-color: #9333ea;
+
+  background: #faf5ff;
+
+  box-shadow:
+    0 0 0 2px rgba(147, 51, 234, 0.12);
+}
+
+
+/* ============================================================
+   17. ICONO DE CATEGORÍA
+   ============================================================ */
+
+.selection-category-icon {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  width: 38px;
+  height: 38px;
+
+  border-radius: 10px;
+
+  background: #f3e8ff;
+
+  color: #9333ea;
+}
+
+
+/* ============================================================
+   18. CHECK DE CATEGORÍA
+   ============================================================ */
+
+.category-card.selected .selection-check {
+  background: #9333ea;
+}
+
+
+/* ============================================================
+   19. EFECTO DE CARGA
+   ============================================================ */
+
+.selection-empty svg {
+  animation: selection-spin 1.2s linear infinite;
+}
+
+@keyframes selection-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* ============================================================
+   20. ACCESIBILIDAD / FOCUS
+   ============================================================ */
+
+.selection-card:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.25);
+
+  outline-offset: 2px;
+}
+
+.category-card:focus-visible {
+  outline-color: rgba(147, 51, 234, 0.3);
+}
+
+
+/* ============================================================
+   21. RESPONSIVE - TABLET
+   ============================================================ */
+
+@media (max-width: 900px) {
+
+  .selection-grid {
+    grid-template-columns: repeat(
+      2,
+      minmax(0, 1fr)
+    );
+
+    max-height: 320px;
+  }
+
+  .category-grid {
+    grid-template-columns: repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  }
+}
+
+
+/* ============================================================
+   22. RESPONSIVE - MOBILE
+   ============================================================ */
+
+@media (max-width: 600px) {
+
+  .selection-grid,
+  .category-grid {
+    grid-template-columns: 1fr;
+
+    max-height: 280px;
+  }
+
+  .selection-card {
+    min-height: auto;
+
+    padding: 14px;
+  }
+
+  .selection-card-info {
+    flex-direction: column;
+
+    align-items: flex-start;
+  }
+
+  .selection-card-info span {
+    width: fit-content;
+  }
+
+  .selection-product-icon,
+  .selection-category-icon {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+
+/* ============================================================
+   23. PANTALLAS MUY PEQUEÑAS
+   ============================================================ */
+
+@media (max-width: 400px) {
+
+  .selection-grid,
+  .category-grid {
+    gap: 10px;
+  }
+
+  .selection-card {
+    padding: 12px;
+
+    border-radius: 11px;
+  }
+
+  .selection-card-top strong {
+    font-size: 14px;
+  }
+
+  .selection-card small {
+    font-size: 11px;
+  }
+}
